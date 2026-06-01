@@ -314,7 +314,7 @@ flowchart LR
   B -->|"Escalate\n(confirmation required)"| H["Status → Escalated · Row purple\nMandate moves to SCR-REJ-005 Escalations Board"]:::esc
   H --> H2["Escalate action no longer available for this mandate"]:::sys
 
-  B -->|"Stop Mandate\n(confirmation required)"| I["All trials and Payer Reminders halted\nMandate removed from all Rejection screens\nMandate visible only in Mandates Management"]:::sys
+  B -->|"Stop Mandate\n(confirmation required)"| I["All active bank submissions and Payer Reminders halted\nMandate removed from all Rejection screens\nMandate visible only in Mandates Management"]:::sys
 
   B -->|"Close Case\nNo Action group only\n(confirmation required)"| J[Confirmation dialog shown]:::ops
   J --> J2["Mandate closed · Row grey"]:::sys
@@ -338,42 +338,46 @@ flowchart LR
 
 <!-- WF 8 -->
 <div class="workflow-container">
-  <div class="workflow-title"><span class="wf-num">8</span>Signature Issues — Full Bank Submission Trial Flow (RR01, RR02)</div>
-  <div class="workflow-sub">Actors: System · Bank · Payer (contacted only after all silent attempts fail) &nbsp;·&nbsp; Screen: SCR-PAY-002</div>
-  <div class="note">⚙️ <strong>The payer is NOT contacted at the start.</strong> The system silently tries all stored signatures with the bank first.<br>Each trial = up to <strong>5 signature submissions</strong> + <strong>1 EID signature</strong> (Trial 1 only) = max 6 bank submissions per trial.<br>Only after all attempts in a trial fail does the system send a Correction Link to the payer — <strong>every contact always includes the link.</strong><br>Dashboard Bank Submissions column format: <strong>1 / 3</strong> — total bank submissions used out of maximum.<br>ℹ️ Max Payer Reminders and Max Bank Submissions are system-triggered statuses. Escalated status is only set by ops manually.</div>
+  <div class="workflow-title"><span class="wf-num">8</span>Signature Issues — Detailed Flow (RR01, RR02)</div>
+  <div class="workflow-sub">Actors: System · Bank · Payer (contacted only after all signature attempts in a bank submission fail) &nbsp;·&nbsp; Screen: SCR-PAY-002</div>
+  <div class="note">⚙️ <strong>1 bank submission = one full round of signature attempts.</strong> The Bank Submissions counter stays at its current value while the system is trying signatures. It goes up by exactly +1 only when the round is done — whether a signature was approved or all failed. A round with 6 attempts counts the same as a round where the first signature succeeds: both = 1 bank submission.<br>
+  <strong>1st bank submission:</strong> up to 6 signature attempts (5 drawn signatures, then the EID signature if all 5 fail).<br>
+  <strong>2nd bank submission onwards:</strong> up to 5 attempts (drawn signatures only — no EID signature).<br>
+  The payer is <strong>NOT contacted</strong> until all signature attempts in a bank submission fail. Every contact always includes the correction link.<br>
+  ℹ️ Max Bank Submissions = max number of bank submissions allowed. Max Payer Reminders and Max Bank Submissions are system-triggered. Escalated is ops-only.</div>
   <div class="mermaid">
 flowchart TD
-  A(["START — RR01 or RR02 detected — from WF 1\nNO payer contact at this point"]) --> B
-  B["Mandate appears in SCR-REJ-001 Rejections Dashboard\nSystem begins silent signature submission attempts"]:::sys
+  A(["START — RR01 or RR02 detected — from WF 1\nNO payer contact at this point\nBank Submissions counter stays at current value while signatures are being tried"]) --> B
+  B["Mandate appears in SCR-REJ-001 Rejections Dashboard\nSystem starts trying stored signatures one by one"]:::sys
 
-  B --> C["System submits Signature 1 to bank\nBank Submissions counter increments"]:::sys
+  B --> C["System tries Signature 1 against the bank"]:::sys
   C --> D{Bank approves Sig 1?}:::dec
-  D -->|YES| E([END — Mandate Approved]):::endok
-  D -->|NO| F["System submits Signature 2"]:::sys
+  D -->|YES| E(["Bank Submissions +1 — round complete\nMandate → APPROVED"]):::endok
+  D -->|NO| F["System tries Signature 2"]:::sys
   F --> G{Bank approves Sig 2?}:::dec
   G -->|YES| E
-  G -->|NO| H["System submits Signatures 3, 4, 5\nBank Submissions counter increments each time"]:::sys
+  G -->|NO| H["System tries Signatures 3, 4, 5 in order"]:::sys
   H --> I{Any of Signatures 3 to 5 approved?}:::dec
   I -->|YES| E
-  I -->|"NO — All 5 signatures failed"| J{Is this Trial 1?}:::dec
+  I -->|"NO — all 5 drawn signatures failed"| J{"Is this the\n1st bank submission?"}:::dec
 
-  J -->|"YES — Trial 1 only"| K["System submits stored EID Signature to bank\nEID signature captured from Phase 2 Emirates ID scan"]:::sys
-  K --> L{Bank approves EID Signature?}:::dec
+  J -->|"YES — 1st bank submission only"| K["System tries the EID Signature against the bank\nThis is the signature image from the payer's Phase 2 Emirates ID scan\nOnly used in the 1st bank submission"]:::sys
+  K --> L{EID Signature approved?}:::dec
   L -->|YES| E
   L -->|NO| M
 
-  J -->|"NO — Trial 2 or later\nmax 5 attempts only"| M
+  J -->|"NO — 2nd bank submission onwards\nno EID signature step"| M
 
-  M{"Max Bank Submissions reached?"}:::dec
-  M -->|YES| N(["Status: Max Bank Submissions · Row amber\nMandate moves to Max Bank Submissions Board"]):::maxsub
-  M -->|NO| O
+  M["All signature attempts exhausted\nBank Submissions +1 — round complete\nNOW the system contacts the payer for the first time"]:::sys
+  M --> MM{"Max Bank Submissions reached?"}:::dec
+  MM -->|YES| N(["Status: Max Bank Submissions · Row amber\nMandate moves to Max Bank Submissions Board"]):::maxsub
+  MM -->|NO| O
 
-  O["All attempts in this trial exhausted\nNOW the system contacts the payer for the first time\nSystem sends Correction Link — includes link every time"]:::sys
-  O --> P["Payer Reminder count +1 · Waiting period starts"]:::sys
-  P --> Q{Payer responds within waiting period?}:::dec
+  O["System sends Correction Link to payer\nEvery contact always includes the link\nPayer Reminder count +1 · Waiting period starts"]:::sys
+  O --> Q{Payer responds within waiting period?}:::dec
 
   Q -->|YES| R["Payer draws 5 new signatures in SCR-PAY-002"]:::payer
-  R --> S["Payer submits · Payer Reminders reset to 0\nNew trial begins — Bank Submissions increments"]:::payer
+  R --> S["Payer submits · Payer Reminders reset to 0\nNew bank submission begins — counter stays at current value\nuntil all new signature attempts are done"]:::payer
   S --> C
 
   Q -->|NO| U{"Max Payer Reminders reached?"}:::dec
@@ -392,10 +396,9 @@ flowchart TD
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-box" style="background:#1E40AF;"></div>System (silent — no payer contact during signature attempts)</div>
-    <div class="legend-item"><div class="legend-box" style="background:#065F46;"></div>Payer (contacted only after all attempts fail — always with a link)</div>
-    <div class="legend-item"><div class="legend-box" style="background:#0369A1;"></div>Bank</div>
-    <div class="legend-item"><div class="legend-box" style="background:#15803D;"></div>End — approved</div>
+    <div class="legend-item"><div class="legend-box" style="background:#1E40AF;"></div>System (silent — no payer contact while signatures are being tried)</div>
+    <div class="legend-item"><div class="legend-box" style="background:#065F46;"></div>Payer (contacted only after all attempts in a bank submission fail)</div>
+    <div class="legend-item"><div class="legend-box" style="background:#15803D;"></div>Round complete — Bank Submissions +1</div>
     <div class="legend-item"><div class="legend-box" style="background:#DC2626;"></div>Max Payer Reminders (system-triggered)</div>
     <div class="legend-item"><div class="legend-box" style="background:#B45309;"></div>Max Bank Submissions (system-triggered)</div>
   </div>
