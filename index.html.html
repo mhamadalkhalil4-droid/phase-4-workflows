@@ -19,6 +19,7 @@ h1 { color: #120C24; font-size: 22px; margin-bottom: 4px; }
 .edgePath .path { stroke: #374151 !important; stroke-width: 2.5px !important; }
 .arrowheadPath { fill: #374151 !important; stroke: #374151 !important; }
 .note { background: #FFFBEB; border: 1px solid #F59E0B; border-radius: 8px; padding: 10px 16px; font-size: 11.5px; color: #92400E; margin: 0 0 16px 0; line-height: 1.6; }
+.note-purple { background: #F5F3FF; border: 1px solid #C4B5FD; border-radius: 8px; padding: 10px 16px; font-size: 11.5px; color: #5B21B6; margin: 0 0 16px 0; line-height: 1.6; }
 .rt { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
 .rt th { background: #1E293B; color: #fff; padding: 9px 14px; text-align: left; font-weight: 600; }
 .rt td { padding: 8px 14px; border-bottom: 1px solid #E2E8F0; vertical-align: top; }
@@ -37,7 +38,7 @@ h1 { color: #120C24; font-size: 22px; margin-bottom: 4px; }
 <body>
 
 <h1>Phase 4 Workflows — Rejection Handling &amp; Resubmission</h1>
-<p class="subtitle">Direct Debit.cc &nbsp;·&nbsp; Phase 4 &nbsp;·&nbsp; Updated May 2026 &nbsp;·&nbsp; 9 Workflows</p>
+<p class="subtitle">Direct Debit.cc &nbsp;·&nbsp; Phase 4 &nbsp;·&nbsp; Updated June 2026 &nbsp;·&nbsp; 9 Workflows</p>
 
 <script>
 mermaid.initialize({
@@ -62,6 +63,7 @@ mermaid.initialize({
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">1</span>Rejection Detection &amp; Group Routing</div>
   <div class="workflow-sub">Actors: RPA (automated) · System &nbsp;·&nbsp; Fully automated — no human trigger needed</div>
+  <div class="note-purple">🔑 <strong>Escalation model:</strong> "Max Payer Reminders" and "Max Bank Submissions" are system-triggered statuses — the mandate row changes colour and moves to a dedicated sub-dashboard automatically. <strong>"Escalated" status can only be reached by the ops team manually clicking Escalate</strong> from any rejection or sub-dashboard screen.</div>
   <div class="mermaid">
 flowchart TD
   A([START — RPA triggered]) --> B
@@ -70,7 +72,7 @@ flowchart TD
   D[System matches each entry to an internal mandate record]:::sys --> E
   E["System stores rejection code · Status → REJECTED"]:::sys --> F
   F[System classifies mandate into rejection group]:::sys --> G
-  G[SCR-REJ-001 — Mandate appears in Rejections table]:::scr --> H
+  G[SCR-REJ-001 — Mandate appears in Rejections Dashboard table]:::scr --> H
   H{Which rejection group?}:::dec
 
   classDef rpa fill:#6D28D9,color:#fff,stroke:none
@@ -78,21 +80,23 @@ flowchart TD
   classDef scr fill:#EFF6FF,color:#1E40AF,stroke:#3B82F6,stroke-width:2px
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
+  classDef maxrem fill:#DC2626,color:#fff,stroke:none,border-radius:20px
+  classDef maxsub fill:#B45309,color:#fff,stroke:none,border-radius:20px
+  classDef escalated fill:#6D28D9,color:#fff,stroke:none,border-radius:20px
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   classDef payer fill:#065F46,color:#fff,stroke:none
   classDef bank fill:#0369A1,color:#fff,stroke:none
   classDef ops fill:#92400E,color:#fff,stroke:none
   </div>
   <table class="rt">
-    <tr><th>Group</th><th>Codes</th><th>Automated Action</th><th>See</th></tr>
-    <tr><td class="grp grp-sig">Signature Issues</td><td>RR01, RR02</td><td>System silently tries stored signatures with the bank first — no payer contact until all attempts fail</td><td><strong>WF 8</strong></td></tr>
-    <tr><td class="grp grp-ac">Account &amp; Card Issues</td><td>RR04, RR07–RR14</td><td>Send Details Correction Link to payer</td><td><strong>WF 2</strong></td></tr>
-    <tr><td class="grp grp-bl">Blocked Accounts</td><td>RR15, RR16, RR17</td><td>Send Details Correction Link to payer</td><td><strong>WF 2</strong></td></tr>
-    <tr><td class="grp grp-ti">Title Mismatch</td><td>RR05</td><td>Two-stage correction link — based on total mandate retrials</td><td><strong>WF 3</strong></td></tr>
-    <tr><td class="grp grp-id">Identity Issues</td><td>RR50</td><td>Send EID Correction Link to payer</td><td><strong>WF 2</strong></td></tr>
-    <tr><td class="grp grp-co">Contact Bank Required</td><td>RR18</td><td>Send message asking payer to confirm with their bank — system auto-resubmits on scheduled date</td><td><strong>WF 4</strong></td></tr>
-    <tr><td class="grp grp-na">No Action</td><td>RR06</td><td>No automated action — mandate appears in SCR-REJ-001 for ops review</td><td><strong>WF 5</strong></td></tr>
+    <tr><th>Group</th><th>Codes</th><th>Automated Action</th><th>Workflow</th></tr>
+    <tr><td class="grp grp-sig">Signature Issues</td><td>RR01, RR02</td><td>System silently tries all stored signatures first — no payer contact until all attempts fail</td><td><strong>WF 8</strong></td></tr>
+    <tr><td class="grp grp-ac">Account &amp; Card Issues</td><td>RR04, RR07–RR14</td><td>Send Correction Link to payer</td><td><strong>WF 2</strong></td></tr>
+    <tr><td class="grp grp-bl">Blocked Accounts</td><td>RR15, RR16, RR17</td><td>Send Correction Link to payer</td><td><strong>WF 2</strong></td></tr>
+    <tr><td class="grp grp-ti">Title Mismatch</td><td>RR05</td><td>Two-stage correction link — based on total mandate bank submissions</td><td><strong>WF 3</strong></td></tr>
+    <tr><td class="grp grp-id">Identity Issues</td><td>RR50</td><td>Send Correction Link to payer</td><td><strong>WF 2</strong></td></tr>
+    <tr><td class="grp grp-co">Contact Bank Required</td><td>RR18</td><td>Send message with scheduled resubmission date — auto-resubmits after waiting period</td><td><strong>WF 4</strong></td></tr>
+    <tr><td class="grp grp-na">No Action</td><td>RR06</td><td>No automated action — appears in Rejections Dashboard for ops review</td><td><strong>WF 5</strong></td></tr>
     <tr><td class="grp grp-au">Auto-Resubmission</td><td>RR54, RR55, RR90, RR91, RR92</td><td>System immediately resubmits to bank — no payer contact</td><td><strong>WF 6</strong></td></tr>
   </table>
   <div class="legend">
@@ -107,41 +111,40 @@ flowchart TD
 <!-- WF 2 -->
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">2</span>Payer Correction Loop</div>
-  <div class="workflow-sub">Applies to: Account &amp; Card Issues · Blocked Accounts · Identity Issues · Title Mismatch<br>
-  ⚠️ Signature Issues are handled separately in WF 8 — they do NOT start here.<br>
-  Actors: System · Payer · Bank</div>
-  <div class="note">⚙️ <strong>Merchant-configured:</strong> Waiting Period (days) · Max Reminders · Max Retrials · Contact Channel (SMS / WhatsApp / Email)<br>ℹ️ Correction links remain active after the waiting period. Payer responses are processed even if the mandate is escalated.</div>
+  <div class="workflow-sub">Applies to: Account &amp; Card Issues · Blocked Accounts · Identity Issues · Title Mismatch &nbsp;·&nbsp; Actors: System · Payer · Bank<br>⚠️ Signature Issues are handled separately in WF 8 — they do NOT start here.</div>
+  <div class="note">⚙️ <strong>Merchant-configured:</strong> Waiting Period (days) · Max Payer Reminders · Max Bank Submissions · Contact Channel (SMS / WhatsApp / Email)<br>ℹ️ Correction links remain active after the waiting period. Payer responses are processed even if the mandate status is Max Payer Reminders or Max Bank Submissions.<br>📨 <strong>Every contact to the payer always includes a correction link</strong> — there are no text-only nudge messages.</div>
   <div class="mermaid">
 flowchart TD
-  A(["START — from WF 1<br/>Account & Card · Blocked Accounts · Identity · Title Mismatch"]) --> B
+  A(["START — from WF 1"]) --> B
   B[System generates group-specific correction link]:::sys --> C
-  C[System sends link to payer via configured channel]:::sys --> D
-  D["Reminder count +1 · Waiting period starts"]:::sys --> E
+  C[System sends Correction Link to payer via configured channel]:::sys --> D
+  D["Payer Reminder count +1 · Waiting period starts"]:::sys --> E
   E{Payer responds within waiting period?}:::dec
+
   E -->|YES| F[Payer opens link and submits corrected information]:::payer
   F --> G[System receives correction and resubmits to bank]:::sys
-  G --> H["Retrials +1 · Reminders reset to 0"]:::sys
+  G --> H["Bank Submissions +1 · Payer Reminders reset to 0"]:::sys
   H --> I[Bank processes resubmission and returns response]:::bank
   I --> J{Bank approves?}:::dec
   J -->|YES| K([END — Mandate Approved]):::endok
   J -->|NO| L[New rejection code received from bank]:::sys
-  L --> M{Max retrials reached?}:::dec
-  M -->|YES| N([ESCALATED — Max Retrials · Row to amber]):::endesc
+  L --> M{"Max Bank Submissions reached?"}:::dec
+  M -->|YES| N(["Status: Max Bank Submissions · Row amber\nMandate moves to Max Bank Submissions Board"]):::maxsub
   M -->|NO| O[System re-classifies using new rejection code]:::sys
   O --> P[↺ Return to WF 1 with new code]:::loop
 
-  E -->|NO| Q{Max reminders reached?}:::dec
-  Q -->|YES| R([ESCALATED — Max Reminders · Row to coral]):::endesc
-  Q -->|NO| S["System sends nudge reminder — no new link"]:::sys
-  S --> T["Reminder count +1 · Waiting period restarts"]:::sys
-  T --> E
+  E -->|NO| Q{"Max Payer Reminders reached?"}:::dec
+  Q -->|YES| R(["Status: Max Payer Reminders · Row coral\nMandate moves to Max Payer Reminders Board"]):::maxrem
+  Q -->|NO| S["System sends new Correction Link to payer\nPayer Reminder count +1 · Waiting period restarts"]:::sys
+  S --> E
 
   classDef sys fill:#1E40AF,color:#fff,stroke:none
   classDef payer fill:#065F46,color:#fff,stroke:none
   classDef bank fill:#0369A1,color:#fff,stroke:none
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
+  classDef maxrem fill:#DC2626,color:#fff,stroke:none
+  classDef maxsub fill:#B45309,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
   <div class="legend">
@@ -149,7 +152,8 @@ flowchart TD
     <div class="legend-item"><div class="legend-box" style="background:#065F46;"></div>Payer</div>
     <div class="legend-item"><div class="legend-box" style="background:#0369A1;"></div>Bank</div>
     <div class="legend-item"><div class="legend-box" style="background:#15803D;"></div>End — approved</div>
-    <div class="legend-item"><div class="legend-box" style="background:#DC2626;"></div>End — escalated</div>
+    <div class="legend-item"><div class="legend-box" style="background:#DC2626;"></div>Max Payer Reminders (system-triggered)</div>
+    <div class="legend-item"><div class="legend-box" style="background:#B45309;"></div>Max Bank Submissions (system-triggered)</div>
     <div class="legend-item"><div class="legend-box" style="background:#FFF7ED;border:2px dashed #F59E0B;"></div>Loop / reference</div>
   </div>
 </div>
@@ -159,28 +163,28 @@ flowchart TD
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">3</span>Title Mismatch — Two-Stage Correction (RR05)</div>
   <div class="workflow-sub">Actors: System · Payer · Bank &nbsp;·&nbsp; Screens: SCR-PAY-004 Standard and Extended</div>
-  <div class="note">⚙️ Threshold is <strong>2 total retrials</strong> on the mandate regardless of rejection reason.<br>Standard stage: account holder name text entry only. Extended stage: name + IBAN confirmation (pre-filled, editable). No EID re-scan in either stage.</div>
+  <div class="note">⚙️ Threshold is <strong>2 total bank submissions</strong> on the mandate regardless of rejection reason.<br>Standard stage: payer provides account holder name (text entry only — must match bank account exactly).<br>Extended stage: name + IBAN confirmation (pre-filled from original entry, editable). No EID re-scan in either stage.</div>
   <div class="mermaid">
 flowchart TD
   A([START — RR05 detected]) --> B
-  B[System reads total retrial count for this mandate]:::sys --> C
-  C{"Total mandate retrials ≥ 2?"}:::dec
-  C -->|"NO — retrials 0 or 1"| D[System sends Standard Title Correction Link]:::sys
-  C -->|"YES — retrials 2 or more"| E[System sends Extended Title Correction Link]:::sys
-  D --> F["SCR-PAY-004 Standard<br/>Account Holder Name — text entry only"]:::scr
-  E --> G["SCR-PAY-004 Extended<br/>Account Holder Name + IBAN confirmation<br/>pre-filled and editable"]:::scr
-  F --> H[Payer types name as it appears on bank account]:::payer
-  G --> I["Payer enters name and confirms or updates IBAN"]:::payer
+  B[System reads total bank submission count for this mandate]:::sys --> C
+  C{"Total bank submissions on mandate ≥ 2?"}:::dec
+  C -->|"NO — submissions 0 or 1"| D[System sends Standard Title Correction Link]:::sys
+  C -->|"YES — submissions 2 or more"| E[System sends Extended Title Correction Link]:::sys
+  D --> F["SCR-PAY-004 Standard\nProvide Account Holder Name — text entry only\nmust match bank account exactly"]:::scr
+  E --> G["SCR-PAY-004 Extended\nProvide Account Holder Name + IBAN confirmation\nIBAN pre-filled from original entry, editable"]:::scr
+  F --> H[Payer types name exactly as on bank account]:::payer
+  G --> I["Payer provides name and confirms or updates IBAN"]:::payer
   H --> J[System resubmits to bank]:::sys
   I --> J
-  J --> K["Retrials +1 · Reminders reset to 0"]:::sys
+  J --> K["Bank Submissions +1 · Payer Reminders reset to 0"]:::sys
   K --> L[Bank processes mandate]:::bank
   L --> M{Bank approves?}:::dec
   M -->|YES| N([END — Mandate Approved]):::endok
-  M -->|NO| O{Max retrials reached?}:::dec
-  O -->|YES| P([ESCALATED — Max Retrials Reached]):::endesc
+  M -->|NO| O{"Max Bank Submissions reached?"}:::dec
+  O -->|YES| P(["Status: Max Bank Submissions\nMandate moves to Max Bank Submissions Board"]):::maxsub
   O -->|NO| Q{Still RR05?}:::dec
-  Q -->|YES| R[↺ Loop back to — Read retrial count]:::loop
+  Q -->|YES| R[↺ Loop back to — Read bank submission count]:::loop
   Q -->|NO| S[↺ Return to WF 1 with new code]:::loop
 
   classDef sys fill:#1E40AF,color:#fff,stroke:none
@@ -189,7 +193,7 @@ flowchart TD
   classDef scr fill:#EFF6FF,color:#1E40AF,stroke:#3B82F6,stroke-width:2px
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
+  classDef maxsub fill:#B45309,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
 </div>
@@ -199,29 +203,29 @@ flowchart TD
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">4</span>Contact Bank Required — Auto Scheduled Resubmission (RR18)</div>
   <div class="workflow-sub">Actors: System · Payer · Bank &nbsp;·&nbsp; System auto-resubmits on the scheduled date regardless of payer reply</div>
-  <div class="note">⚙️ <strong>Merchant-configured:</strong> Waiting Period (days) · Max Retrials<br>ℹ️ <strong>No reminders for this group — retrials only.</strong> The payer is informed and asked to take action with their bank, but system resubmits automatically on the scheduled date whether the payer responds or not.</div>
+  <div class="note">⚙️ <strong>Merchant-configured:</strong> Waiting Period (days) · Max Bank Submissions<br>ℹ️ <strong>No Payer Reminders for this group — Bank Submissions only.</strong> System sends a one-time message with the resubmission date, then auto-resubmits on that date whether or not the payer acts.</div>
   <div class="mermaid">
 flowchart TD
   A([START — RR18 detected]) --> B
-  B["System calculates resubmission date:<br/>rejection date + configured waiting period = scheduled date"]:::sys
-  B --> C["System sends message to payer:<br/>Your bank payment form was returned because your bank<br/>has asked for your confirmation to proceed.<br/>Please contact your bank and confirm the direct debit<br/>payment authorisation as soon as possible.<br/>We will automatically resubmit your form on [scheduled date].<br/>Please act before this date to avoid delays."]:::sys
+  B["System calculates resubmission date:\nrejection date + configured waiting period = scheduled date"]:::sys
+  B --> C["System sends message to payer:\nYour bank payment form was rejected because your bank\nhas asked for your confirmation to proceed.\nPlease contact your bank and confirm the direct debit\npayment authorisation as soon as possible.\nWe will automatically resubmit your form on [scheduled date].\nPlease act before this date to avoid delays."]:::sys
   C --> D[System waits until the scheduled resubmission date]:::sys
-  D --> E["System auto-resubmits to bank on scheduled date<br/>regardless of whether payer has responded"]:::sys
-  E --> F["Retrials +1 · No reminder count change"]:::sys
+  D --> E["System auto-resubmits to bank — regardless of payer response"]:::sys
+  E --> F["Bank Submissions +1 · No Payer Reminder count change"]:::sys
   F --> G[Bank processes mandate and returns response]:::bank
   G --> H{Bank approves?}:::dec
   H -->|YES| I([END — Mandate Approved]):::endok
-  H -->|NO| J{Max retrials reached?}:::dec
-  J -->|YES| K([ESCALATED — Max Retrials Reached]):::endesc
+  H -->|NO| J{"Max Bank Submissions reached?"}:::dec
+  J -->|YES| K(["Status: Max Bank Submissions\nMandate moves to Max Bank Submissions Board"]):::maxsub
   J -->|NO| L{Still RR18?}:::dec
-  L -->|"YES — bank still requires confirmation"| M["↺ Loop back to — Send message with new scheduled date"]:::loop
+  L -->|"YES — bank still requires confirmation"| M[↺ Loop back to — Calculate new scheduled date and send message]:::loop
   L -->|NO — different rejection code| N[↺ Return to WF 1 with new code]:::loop
 
   classDef sys fill:#1E40AF,color:#fff,stroke:none
   classDef bank fill:#0369A1,color:#fff,stroke:none
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
+  classDef maxsub fill:#B45309,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
 </div>
@@ -230,21 +234,18 @@ flowchart TD
 <!-- WF 5 -->
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">5</span>No Action — Payer Deceased (RR06)</div>
-  <div class="workflow-sub">Actors: System · Operations Team &nbsp;·&nbsp; Screen: SCR-REJ-001</div>
+  <div class="workflow-sub">Actors: System · Operations Team &nbsp;·&nbsp; Screen: SCR-REJ-001 Rejections Dashboard</div>
   <div class="mermaid">
 flowchart TD
   A([START — RR06 detected]) --> B
-  B["System stores RR06 · Status → REJECTED · Group → No Action"]:::sys
+  B["System stores RR06 · Status: REJECTED · Group: No Action"]:::sys
   B --> C["No automated action — No message or link sent to payer"]:::sys
   C --> D[SCR-REJ-001 — Mandate visible to Ops Team]:::scr
   D --> E{Ops team decision?}:::dec
-  E -->|Close Case| F[Confirmation dialog shown]:::ops
-  E -->|Delete| G[Confirmation dialog shown]:::ops
-  E -->|No action taken| H[Mandate stays in SCR-REJ-001 for future ops decision]:::loop
-  F --> I["Mandate flagged Closed · Row → grey"]:::sys
-  I --> J([END — Case Closed])
-  G --> K[Mandate permanently deleted from system]:::sys
-  K --> L([END — Deleted])
+  E -->|"Close Case\nconfirmation required"| F[Confirmation dialog shown]:::ops
+  E -->|No action taken| G[Mandate stays in Rejections Dashboard for future ops decision]:::loop
+  F --> H["Mandate flagged Closed · Row grey · No further action"]:::sys
+  H --> I([END — Case Closed])
 
   classDef sys fill:#1E40AF,color:#fff,stroke:none
   classDef scr fill:#EFF6FF,color:#1E40AF,stroke:#3B82F6,stroke-width:2px
@@ -259,17 +260,17 @@ flowchart TD
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">6</span>Auto-Resubmission (RR54, RR55, RR90, RR91, RR92)</div>
   <div class="workflow-sub">Actors: System (fully automated) · Bank &nbsp;·&nbsp; No payer contact at any point</div>
-  <div class="note">⚙️ <strong>Merchant-configured value:</strong> Max Retrials</div>
+  <div class="note">⚙️ <strong>Merchant-configured value:</strong> Max Bank Submissions</div>
   <div class="mermaid">
 flowchart TD
   A([START — Auto-resubmit code detected]) --> B
   B["System resubmits mandate to bank immediately"]:::sys
-  B --> C["Retrials +1 · No reminders · No payer contact"]:::sys
+  B --> C["Bank Submissions +1 · No Payer Reminders · No payer contact"]:::sys
   C --> D[Bank processes mandate]:::bank
   D --> E{Bank approves?}:::dec
   E -->|YES| F([END — Mandate Approved]):::endok
-  E -->|NO| G{Max retrials reached?}:::dec
-  G -->|YES| H([ESCALATED — Max Retrials Reached]):::endesc
+  E -->|NO| G{"Max Bank Submissions reached?"}:::dec
+  G -->|YES| H(["Status: Max Bank Submissions\nMandate moves to Max Bank Submissions Board"]):::maxsub
   G -->|NO| I{Still auto-resubmit code?}:::dec
   I -->|YES| J[↺ Loop back to — System resubmits immediately]:::loop
   I -->|NO| K[↺ Return to WF 1 with new code]:::loop
@@ -278,7 +279,7 @@ flowchart TD
   classDef bank fill:#0369A1,color:#fff,stroke:none
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
+  classDef maxsub fill:#B45309,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
 </div>
@@ -286,47 +287,49 @@ flowchart TD
 
 <!-- WF 7 -->
 <div class="workflow-container">
-  <div class="workflow-title"><span class="wf-num">7</span>Ops Manual Actions on Rejections and Escalation Screens</div>
-  <div class="workflow-sub">Actors: Operations Team &nbsp;·&nbsp; Screens: SCR-REJ-001, SCR-REJ-002, SCR-REJ-003</div>
+  <div class="workflow-title"><span class="wf-num">7</span>Ops Manual Actions</div>
+  <div class="workflow-sub">Actors: Operations Team &nbsp;·&nbsp; Screens: SCR-REJ-001 (Rejections Dashboard) · SCR-REJ-002 (Rejected Mandate Profile) · SCR-REJ-003 (Max Payer Reminders Board) · SCR-REJ-004 (Max Bank Submissions Board) · SCR-REJ-005 (Escalations Board)</div>
+  <div class="note-purple">⚠️ <strong>All actions that cannot be undone require a confirmation dialog before execution.</strong> This includes: Send Correction Link, Resubmit Mandate, Escalate, Stop Mandate, Close Case, Reset Payer Reminder Count, Reset Bank Submission Count.</div>
   <div class="mermaid">
 flowchart LR
-  A([Ops opens SCR-REJ-001 or SCR-REJ-003]) --> B{Action chosen?}:::dec
+  A([Ops opens any rejection screen]) --> B{Action chosen?}:::dec
 
-  B -->|View Profile| C[SCR-REJ-002 Mandate Profile — read-only]:::scr
+  B -->|View Profile| C[SCR-REJ-002 Rejected Mandate Profile — read-only]:::scr
 
-  B -->|Send Correction Link| D[System sends group-specific link]:::sys
-  D --> D2["Reminder +1 · Waiting period restarts"]:::sys
-  D2 --> D3[↺ Continues in WF 2]:::loop
+  B -->|"Send Correction Link\n(confirmation required)"| D["System sends group-specific Correction Link\nPayer Reminder +1 · Waiting period restarts"]:::sys
+  D --> D2[↺ Continues in WF 2]:::loop
 
-  B -->|Correct Internally| E[Ops enters corrected IBAN, card, or account name]:::ops
-  E --> E2["System auto-resubmits · Retrials +1 · Reminders reset to 0"]:::sys
+  B -->|"Correct Internally\n(confirmation required)"| E["Ops enters corrected details:\nIBAN or card — for Account/Card/Blocked groups\nAccount holder name + IBAN — for Title Mismatch group"]:::ops
+  E --> E2["System auto-resubmits · Bank Submissions +1\nPayer Reminders reset to 0"]:::sys
   E2 --> E3[↺ Awaits bank response]:::loop
 
-  B -->|Resubmit Mandate| F[System resubmits immediately]:::sys
-  F --> F2[Retrials +1]:::sys
+  B -->|"Resubmit Mandate\n(confirmation required)"| F[System resubmits immediately]:::sys
+  F --> F2["Bank Submissions +1"]:::sys
   F2 --> F3[↺ Awaits bank response]:::loop
 
-  B -->|Reset Reminder or Retrial Count| G[Ops selects which counter to reset]:::ops
-  G --> G2["Counter reset to 0 · Escalation cleared · Row → white"]:::sys
+  B -->|"Reset Payer Reminder Count\n(confirmation required)"| G["Payer Reminder count reset to 0\nStatus returns to Pending Payer Response if applicable"]:::sys
 
-  B -->|Escalate| H[Ops escalates before hitting max limits]:::ops
-  H --> H2["Row → purple · Logged in SCR-REJ-002 profile"]:::sys
+  B -->|"Reset Bank Submission Count\n(confirmation required)"| G2["Bank Submission count reset to 0\nStatus returns to Pending Payer Response if applicable"]:::sys
 
-  B -->|"Close Case — No Action only"| I[Confirmation dialog shown]:::ops
-  I --> I2["Mandate closed · Row → grey"]:::sys
+  B -->|"Escalate\n(confirmation required)"| H["Status → Escalated · Row purple\nMandate moves to SCR-REJ-005 Escalations Board"]:::esc
+  H --> H2["Escalate action no longer available for this mandate"]:::sys
 
-  B -->|Delete| J[Confirmation dialog shown]:::ops
-  J --> J2[Mandate permanently deleted]:::sys
+  B -->|"Stop Mandate\n(confirmation required)"| I["All trials and Payer Reminders halted\nMandate removed from all Rejection screens\nMandate visible only in Mandates Management"]:::sys
+
+  B -->|"Close Case\nNo Action group only\n(confirmation required)"| J[Confirmation dialog shown]:::ops
+  J --> J2["Mandate closed · Row grey"]:::sys
 
   classDef sys fill:#1E40AF,color:#fff,stroke:none
   classDef scr fill:#EFF6FF,color:#1E40AF,stroke:#3B82F6,stroke-width:2px
   classDef ops fill:#92400E,color:#fff,stroke:none
   classDef dec fill:#D97706,color:#fff,stroke:none
+  classDef esc fill:#6D28D9,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
   <div class="legend">
     <div class="legend-item"><div class="legend-box" style="background:#1E40AF;"></div>System action</div>
     <div class="legend-item"><div class="legend-box" style="background:#92400E;"></div>Ops action</div>
+    <div class="legend-item"><div class="legend-box" style="background:#6D28D9;"></div>Escalate → Escalations Board</div>
     <div class="legend-item"><div class="legend-box" style="background:#EFF6FF;border:2px solid #3B82F6;"></div>Screen</div>
     <div class="legend-item"><div class="legend-box" style="background:#FFF7ED;border:2px dashed #F59E0B;"></div>Continues in another workflow</div>
   </div>
@@ -335,53 +338,48 @@ flowchart LR
 
 <!-- WF 8 -->
 <div class="workflow-container">
-  <div class="workflow-title"><span class="wf-num">8</span>Signature Issues — Full Trial Flow (RR01, RR02)</div>
+  <div class="workflow-title"><span class="wf-num">8</span>Signature Issues — Full Bank Submission Trial Flow (RR01, RR02)</div>
   <div class="workflow-sub">Actors: System · Bank · Payer (contacted only after all silent attempts fail) &nbsp;·&nbsp; Screen: SCR-PAY-002</div>
-  <div class="note">⚙️ <strong>Important:</strong> The payer is NOT contacted at the start. The system silently tries all stored signatures with the bank first.<br>
-  Only after all attempts in a trial fail does the system send a correction link to the payer to draw new signatures.<br>
-  Each trial = up to <strong>5 signature submissions</strong> + <strong>1 EID signature</strong> (Trial 1 only) = max 6 submissions per trial.<br>
-  Dashboard Retrials column format: <strong>1 (3) / 3</strong> — number in brackets = bank submissions attempted in current trial.</div>
+  <div class="note">⚙️ <strong>The payer is NOT contacted at the start.</strong> The system silently tries all stored signatures with the bank first.<br>Each trial = up to <strong>5 signature submissions</strong> + <strong>1 EID signature</strong> (Trial 1 only) = max 6 bank submissions per trial.<br>Only after all attempts in a trial fail does the system send a Correction Link to the payer — <strong>every contact always includes the link.</strong><br>Dashboard Bank Submissions column format: <strong>1 / 3</strong> — total bank submissions used out of maximum.<br>ℹ️ Max Payer Reminders and Max Bank Submissions are system-triggered statuses. Escalated status is only set by ops manually.</div>
   <div class="mermaid">
 flowchart TD
-  A(["START — RR01 or RR02 detected — from WF 1<br/>NO payer contact at this point"]) --> B
-  B["Mandate appears in SCR-REJ-001<br/>System begins silent signature submission attempts"]:::sys
+  A(["START — RR01 or RR02 detected — from WF 1\nNO payer contact at this point"]) --> B
+  B["Mandate appears in SCR-REJ-001 Rejections Dashboard\nSystem begins silent signature submission attempts"]:::sys
 
-  B --> C["System submits Signature 1 to bank<br/>Dashboard: Retrials X (1) / max"]:::sys
+  B --> C["System submits Signature 1 to bank\nBank Submissions counter increments"]:::sys
   C --> D{Bank approves Sig 1?}:::dec
   D -->|YES| E([END — Mandate Approved]):::endok
-  D -->|NO| F["System submits Signature 2<br/>Dashboard: X (2)"]:::sys
+  D -->|NO| F["System submits Signature 2"]:::sys
   F --> G{Bank approves Sig 2?}:::dec
   G -->|YES| E
-  G -->|NO| H["System submits Signatures 3, 4, 5<br/>Dashboard counter: X (3) → X (4) → X (5)"]:::sys
+  G -->|NO| H["System submits Signatures 3, 4, 5\nBank Submissions counter increments each time"]:::sys
   H --> I{Any of Signatures 3 to 5 approved?}:::dec
   I -->|YES| E
   I -->|"NO — All 5 signatures failed"| J{Is this Trial 1?}:::dec
 
-  J -->|"YES — Trial 1 only"| K["System submits stored EID Signature to bank<br/>Dashboard: X (6) / max<br/>This is the signature captured from the Emirates ID in Phase 2"]:::sys
+  J -->|"YES — Trial 1 only"| K["System submits stored EID Signature to bank\nEID signature captured from Phase 2 Emirates ID scan"]:::sys
   K --> L{Bank approves EID Signature?}:::dec
   L -->|YES| E
   L -->|NO| M
 
-  J -->|"NO — Trial 2 or later, max 5 attempts"| M
+  J -->|"NO — Trial 2 or later\nmax 5 attempts only"| M
 
-  M{Max retrials reached?}:::dec
-  M -->|YES| N([ESCALATED — Max Retrials Reached]):::endesc
+  M{"Max Bank Submissions reached?"}:::dec
+  M -->|YES| N(["Status: Max Bank Submissions · Row amber\nMandate moves to Max Bank Submissions Board"]):::maxsub
   M -->|NO| O
 
-  O["All attempts in this trial exhausted<br/>NOW the system contacts the payer for the first time<br/>System sends Signature Correction Link"]:::sys
-  O --> P["Reminder count +1 · Waiting period starts"]:::sys
+  O["All attempts in this trial exhausted\nNOW the system contacts the payer for the first time\nSystem sends Correction Link — includes link every time"]:::sys
+  O --> P["Payer Reminder count +1 · Waiting period starts"]:::sys
   P --> Q{Payer responds within waiting period?}:::dec
 
   Q -->|YES| R["Payer draws 5 new signatures in SCR-PAY-002"]:::payer
-  R --> S["Payer submits · Reminders reset to 0<br/>New trial begins"]:::payer
-  S --> T["Retrials +1<br/>System begins silent submission of new signatures"]:::sys
-  T --> C
+  R --> S["Payer submits · Payer Reminders reset to 0\nNew trial begins — Bank Submissions increments"]:::payer
+  S --> C
 
-  Q -->|NO| U{Max reminders reached?}:::dec
-  U -->|YES| V([ESCALATED — Max Reminders Reached]):::endesc
-  U -->|NO| W["System sends nudge reminder — no new link"]:::sys
-  W --> X["Reminder count +1 · Waiting period restarts"]:::sys
-  X --> Q
+  Q -->|NO| U{"Max Payer Reminders reached?"}:::dec
+  U -->|YES| V(["Status: Max Payer Reminders · Row coral\nMandate moves to Max Payer Reminders Board"]):::maxrem
+  U -->|NO| W["System sends new Correction Link to payer\nPayer Reminder count +1 · Waiting period restarts"]:::sys
+  W --> Q
 
   classDef sys fill:#1E40AF,color:#fff,stroke:none
   classDef payer fill:#065F46,color:#fff,stroke:none
@@ -389,15 +387,17 @@ flowchart TD
   classDef scr fill:#EFF6FF,color:#1E40AF,stroke:#3B82F6,stroke-width:2px
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
+  classDef maxrem fill:#DC2626,color:#fff,stroke:none
+  classDef maxsub fill:#B45309,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-box" style="background:#1E40AF;"></div>System (silent — no payer contact)</div>
-    <div class="legend-item"><div class="legend-box" style="background:#065F46;"></div>Payer (contacted only after all attempts fail)</div>
+    <div class="legend-item"><div class="legend-box" style="background:#1E40AF;"></div>System (silent — no payer contact during signature attempts)</div>
+    <div class="legend-item"><div class="legend-box" style="background:#065F46;"></div>Payer (contacted only after all attempts fail — always with a link)</div>
     <div class="legend-item"><div class="legend-box" style="background:#0369A1;"></div>Bank</div>
     <div class="legend-item"><div class="legend-box" style="background:#15803D;"></div>End — approved</div>
-    <div class="legend-item"><div class="legend-box" style="background:#DC2626;"></div>End — escalated</div>
+    <div class="legend-item"><div class="legend-box" style="background:#DC2626;"></div>Max Payer Reminders (system-triggered)</div>
+    <div class="legend-item"><div class="legend-box" style="background:#B45309;"></div>Max Bank Submissions (system-triggered)</div>
   </div>
 </div>
 
@@ -406,17 +406,16 @@ flowchart TD
 <div class="workflow-container">
   <div class="workflow-title"><span class="wf-num">9</span>Signatory Change Flow (RR14 — Signatory Not Authorised for Mandate Amount)</div>
   <div class="workflow-sub">Actors: System · Current Payer · New Signatory · Bank &nbsp;·&nbsp; Screen: SCR-PAY-006 &nbsp;·&nbsp; The existing mandate is <strong>updated</strong> — a new mandate is not created.</div>
-  <div class="note">ℹ️ Forwarding the link is optional. Whether the new signatory fills the form on their own device or the same device, the screens and data fields are identical.<br>
-  If the bank rejects again with <strong>RR14</strong>, the flow returns to the top of this workflow. A different rejection code routes to WF 1.</div>
+  <div class="note">ℹ️ Forwarding the link is optional. Whether the new signatory fills the form on their own device or the same device, the screens and data fields are identical.<br>If the bank rejects again with <strong>RR14</strong>, the flow returns to the top of this workflow. A different rejection code routes to WF 1.<br>⚠️ All critical actions require confirmation dialogs before execution.</div>
   <div class="mermaid">
 flowchart TD
   A(["START — RR14 correction link sent to current payer — from WF 2"]) --> B
-  B["SCR-PAY-006<br/>Choice: Change Bank Account OR Change Signatory"]:::scr --> C
+  B["SCR-PAY-006\nChoice: Change Bank Account OR Change Signatory"]:::scr --> C
   C{Payer choice?}:::dec
 
-  C -->|Change Bank Account| D["SCR-PAY-006 Banking<br/>Standard IBAN or Card update"]:::scr
+  C -->|Change Bank Account| D["SCR-PAY-006 Banking\nStandard IBAN or Card update"]:::scr
   D --> E[Payer updates banking details]:::payer
-  E --> F["System resubmits · Mandate updated<br/>Retrials +1 · Reminders reset to 0"]:::sys
+  E --> F["System resubmits · Mandate updated\nBank Submissions +1 · Payer Reminders reset to 0"]:::sys
   F --> G[Bank processes mandate]:::bank
   G --> H{Bank approves?}:::dec
   H -->|YES| I([END — Mandate Approved]):::endok
@@ -424,16 +423,16 @@ flowchart TD
   J -->|"YES — still RR14"| K[↺ Loop back to top of WF 9 — new correction link sent]:::loop
   J -->|NO — different code| L[↺ Return to WF 1 with new code]:::loop
 
-  C -->|Change Signatory| M["SCR-PAY-006 Signatory Options<br/>Forward link shown — optional not mandatory"]:::scr
+  C -->|Change Signatory| M["SCR-PAY-006 Signatory Options\nForward link shown — optional not mandatory"]:::scr
   M --> N{Payer forwards link to new signatory?}:::dec
-  N -->|"YES — Forward"| O["Payer selects channel, enters contact details, sends link"]:::payer
+  N -->|"YES — Forward"| O["Payer selects channel, enters contact details, sends link\nConfirmation required before sending"]:::payer
   O --> P[System sends link to new signatory device]:::sys
   P --> Q[New signatory opens link on their own device]:::payer2
   N -->|"NO — Same device"| R[Old payer continues as new signatory on same device]:::payer
   Q --> S
   R --> S
-  S["SCR-PAY-006 New Signatory Form — both paths merge here<br/>Banking Details pre-filled and editable<br/>Emirates ID scan or upload<br/>5 Signatures"]:::scr
-  S --> T["System updates mandate with new signatory information<br/>System resubmits to bank<br/>Retrials +1 · Reminders reset to 0"]:::sys
+  S["SCR-PAY-006 New Signatory Form — both paths merge here\nBanking Details pre-filled and editable\nEmirates ID scan or upload\n5 Signatures"]:::scr
+  S --> T["System updates mandate with new signatory information\nSystem resubmits to bank\nBank Submissions +1 · Payer Reminders reset to 0"]:::sys
   T --> U[Bank processes resubmitted mandate]:::bank
   U --> V{Bank approves?}:::dec
   V -->|YES| W([END — Mandate Approved]):::endok
@@ -448,7 +447,6 @@ flowchart TD
   classDef scr fill:#EFF6FF,color:#1E40AF,stroke:#3B82F6,stroke-width:2px
   classDef dec fill:#D97706,color:#fff,stroke:none
   classDef endok fill:#15803D,color:#fff,stroke:none
-  classDef endesc fill:#DC2626,color:#fff,stroke:none
   classDef loop fill:#FFF7ED,color:#92400E,stroke:#F59E0B,stroke-width:2px,stroke-dasharray:4
   </div>
   <div class="legend">
